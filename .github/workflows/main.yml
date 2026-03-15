@@ -1,7 +1,9 @@
 name: AI Project Automation
 
 on:
-  workflow_dispatch: # هذا يعني أنه يمكنك تشغيله يدويًا
+  push:
+    branches:
+      - main  # تشغيل تلقائي عند أي Push على main
 
 jobs:
   ai_update:
@@ -20,7 +22,6 @@ jobs:
 
           openai.api_key = os.environ["OPENAI_API_KEY"]
 
-          # قراءة كل ملفات المشروع
           files = [str(p) for p in pathlib.Path(".").rglob("*") if p.is_file()]
 
           prompt = f"""
@@ -43,5 +44,15 @@ jobs:
               temperature=0
           )
 
-          print(response.choices[0].message.content)
+          # حفظ التعديلات في ملف مؤقت (يمكنك تعديل هذا الجزء لاحقًا ليطبق مباشرة)
+          with open("ai_suggestions.txt", "w") as f:
+              f.write(response.choices[0].message.content)
           EOF
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "AI updates from OpenAI"
+          git push
